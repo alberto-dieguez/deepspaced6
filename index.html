@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NAVE D-6</title>
+<style>
+  /* ===== TEMAS ===== */
+  :root{
+    --bg:#0A0E17; --panel:#121A2B; --panel-2:#1B2740; --line:#2A3A5C;
+    --text:#DCE6F5; --dim:#7186AA; --hull:#E0523F; --shield:#3FB6D9; --amber:#F0A83C;
+    --commander:#4C6FE0; --tactical:#E0523F; --medic:#9B6FE0; --scientist:#4CB87D; --engineer:#E0A03C;
+    --ship-fill-1:#182544; --ship-fill-2:#101828; --ship-fill-3:#0b1220;
+    --ship-stroke:#536582; --ship-grid:#52698f;
+    --ship-bg:#0A0E17; --radial-1:#16213a;
+  }
+  [data-theme="light"]{
+    --bg:#F2F4F8; --panel:#FFFFFF; --panel-2:#E8ECF2; --line:#C6CCD8;
+    --text:#1A2233; --dim:#6B7587; --hull:#C0382A; --shield:#1E89A6; --amber:#C8801F;
+    --commander:#3D5BC2; --tactical:#C0382A; --medic:#7A50B8; --scientist:#2F8C5C; --engineer:#C8801F;
+    --ship-fill-1:#E8ECF2; --ship-fill-2:#D5DAE3; --ship-fill-3:#C6CCD8;
+    --ship-stroke:#6B7587; --ship-grid:#6B7587;
+    --ship-bg:#FFFFFF; --radial-1:#DDE3EC;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:'Courier New',monospace; -webkit-user-select:none; user-select:none; transition:background .25s, color .25s;}
+  #app{max-width:480px;margin:0 auto;min-height:100vh;padding:10px 10px 26px;
+    background:radial-gradient(ellipse at 20% -10%, var(--radial-1) 0%, transparent 55%), var(--bg); transition:background .25s;}
+
+  h1{font-family:Georgia,serif; font-weight:700; font-size:21px; margin:2px 0 8px; display:flex; justify-content:space-between; align-items:center;}
+  .theme-toggle{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    width:34px; height:28px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px; color:var(--text); transition:all .2s;
+  }
+  .theme-toggle:hover{border-color:var(--amber); color:var(--amber);}
+  .theme-toggle:active{transform:scale(.92);}
+
+  .top-row{display:flex; gap:8px; margin-bottom:10px; align-items:stretch;}
+  .round-pill{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 10px;
+    font-size:11px; color:var(--dim); display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:58px;}
+  .round-pill b{color:var(--amber); font-size:16px;}
+  .phase-pill{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    display:flex; align-items:center; padding:6px 10px; font-size:11px; letter-spacing:.5px; color:var(--amber); font-weight:bold;}
+
+  /* ---- Tablero de la nave ---- */
+  .board-wrap{display:flex; gap:6px; margin-bottom:10px;}
+  .track{width:22px; display:flex; flex-direction:column-reverse; gap:1px;}
+  .track .cell{flex:1; display:flex; align-items:center; justify-content:center; font-size:9px; border-radius:2px; color:var(--dim);}
+  .track.hull .cell.on{background:#3a2018; color:var(--hull); font-weight:bold;}
+  .track.shield .cell.on{background:#132a26; color:var(--shield); font-weight:bold;}
+  .track .cell{background:#0d1422; margin:0.5px 0;}
+
+  /* ---- Contorno de la nave ----
+     El contenido vive dentro de la silueta, pero los paneles son
+     semitransparentes para que el casco siga siendo visible. */
+  .ship{
+    flex:1; position:relative;
+    min-height:800px;
+    padding:28px 22px 22px;
+    display:flex; flex-direction:column; gap:9px;
+    overflow:hidden;
+  }
+  .ship-bg{
+    position:absolute; inset:0; z-index:0;
+    pointer-events:none;
+  }
+  .ship-bg svg{width:100%; height:100%; display:block; overflow:visible;}
+  .ship > *:not(.ship-bg){position:relative; z-index:1;}
+  .scan-row{
+    display:flex; justify-content:center; gap:6px;
+    margin-bottom:14px; min-height:24px;
+    padding-bottom:10px; border-bottom:1px dashed rgba(92,116,156,.35);
+  }
+  .scan-slot{
+    width:34px; height:34px; border-radius:5px;
+    border:2px dashed var(--dim);
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px;
+    background:rgba(7,11,20,.42);
+  }
+  .scan-slot.filled{
+    border-style:solid; border-color:var(--amber);
+    background:rgba(240,168,60,.15); color:var(--amber);
+  }
+
+  /* La información se integra en la nave, no en cajas opacas. */
+  .station-block{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:7px 9px;
+    background:var(--panel);
+    backdrop-filter:blur(1px);
+    display:flex; flex-direction:column; gap:3px;
+    transition:background .25s, border-color .25s;
+  }
+  .station-block.usable{
+    border-color:var(--stc, var(--amber));
+    box-shadow:0 0 0 1px var(--stc,var(--amber)) inset;
+    background:var(--panel-2);
+  }
+  .station-head{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:bold; color:var(--text);}
+  .station-desc{font-size:9.5px; color:var(--text); line-height:1.3; opacity:.82;}
+  .station-foot{display:flex; align-items:center; gap:6px; margin-top:2px;}
+  .row2{display:flex; gap:7px;}
+  .row2 > .station-block{flex:1; min-width:0;}
+
+  /* Zonas que corresponden a la anchura real de la silueta. */
+  #st-commander{margin-left:17%; margin-right:17%;}
+  #st-tactical{margin-left:8%; margin-right:8%;}
+  .row2{margin-left:0; margin-right:0;}
+  #st-engineer{margin-left:20%; margin-right:20%;}
+  .dice-bay{margin-left:12%; margin-right:12%;}
+
+  .dice-bay{display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 0 18px;
+    margin:0 0 14px; border-bottom:1px dashed rgba(92,116,156,.35);}
+  .dice-bay .dice-row{justify-content:center; flex-wrap:nowrap; gap:6px;}
+  .dice-bay .die{width:40px; height:40px; font-size:17px;}
+  .dice-bay .empty-note{text-align:center; margin-top:8px;}
+  .dice-bay-label{font-size:9px; letter-spacing:1.5px; color:var(--dim); text-transform:uppercase; margin-bottom:6px;}
+
+  /* Enfermería: zona separada donde van los dados incapacitados */
+  .infirmary-bay{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    padding:10px 0 4px; margin:0 0 12px;
+    border:1px dashed rgba(155,111,224,.4);
+    border-radius:8px;
+    background:rgba(155,111,224,.05);
+  }
+  .infirmary-label{
+    font-size:9px; letter-spacing:1.5px; color:#9B6FE0;
+    text-transform:uppercase; font-weight:bold; margin-bottom:2px;
+  }
+  .infirmary-bay .dice-row{justify-content:center; flex-wrap:nowrap; gap:6px;}
+  .infirmary-bay .die{width:34px; height:34px; font-size:14px;}
+  .infirmary-bay .die.crew-commander{background:#4C6FE0; border-color:#3a55b0;}
+  .infirmary-bay .die.crew-tactical  {background:#E0523F; border-color:#a8362a;}
+  .infirmary-bay .die.crew-medic     {background:#9B6FE0; border-color:#7550b0;}
+  .infirmary-bay .die.crew-scientist {background:#4CB87D; border-color:#2f8c5c;}
+  .infirmary-bay .die.crew-engineer  {background:#E0A03C; border-color:#a8761f;}
+  .infirmary-bay .die{opacity:.65; filter:saturate(.7);}
+  .infirmary-bay .die::after{content:"🏥"; position:absolute; top:1px; right:2px; font-size:10px; opacity:.6;}
+
+  /* Animación de dado recién lanzado */
+  @keyframes roll-in {
+    0%   { transform:translateY(-8px) scale(.92); opacity:.4; }
+    60%  { transform:translateY(2px) scale(1.06); opacity:1; }
+    100% { transform:translateY(0) scale(1); opacity:1; }
+  }
+  .die.fresh-roll{animation: roll-in .35s ease-out;}
+
+  .station-block{border:1px solid var(--line); border-radius:8px; padding:7px 9px; background:rgba(6,10,18,.55);
+    display:flex; flex-direction:column; gap:3px;}
+  .station-block.usable{border-color:var(--stc, var(--amber)); box-shadow:0 0 0 1px var(--stc,var(--amber)) inset;}
+  .station-head{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:bold; color:var(--text);}
+  .station-icon{width:21px; height:21px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#0a0e17; font-weight:bold; flex-shrink:0;}
+  .station-desc{font-size:9.5px; color:var(--text); line-height:1.35; opacity:.85;}
+  .station-foot{display:flex; align-items:center; gap:6px; margin-top:2px;}
+  .staged-dots{display:flex; gap:3px; flex:1;}
+  .staged-dot{width:14px; height:14px; border-radius:3px; background:var(--stc,var(--amber)); opacity:.85;}
+  .mini-btn{background:var(--stc,var(--amber)); color:#0a0e17; border:none; border-radius:5px; padding:4px 8px; font-size:9px; font-weight:bold;}
+  .mini-btn:disabled{background:var(--line); color:var(--dim);}
+  .row2{display:flex; gap:7px;}
+  .row2 > .station-block{flex:1;}
+
+  /* dados */
+  section.panel{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:10px;}
+  section.panel h2{font-size:10px; letter-spacing:1.5px; color:var(--dim); margin:0 0 8px; font-weight:600;}
+  .dice-row{display:flex; flex-wrap:wrap; gap:8px;}
+  .die{width:50px; height:50px; border-radius:9px; border:2px solid var(--line); background:var(--panel-2);
+    display:flex; align-items:center; justify-content:center; font-size:20px; position:relative; cursor:pointer; color:var(--text);}
+  /* Dados pintados del color del tripulante */
+  .die.crew-commander{background:#4C6FE0; border-color:#3a55b0; color:#fff;}
+  .die.crew-tactical  {background:#E0523F; border-color:#a8362a; color:#fff;}
+  .die.crew-medic     {background:#9B6FE0; border-color:#7550b0; color:#fff;}
+  .die.crew-scientist {background:#4CB87D; border-color:#2f8c5c; color:#fff;}
+  .die.crew-engineer  {background:#E0A03C; border-color:#a8761f; color:#fff;}
+  .die.selected{border-color:var(--amber); transform:translateY(-3px); box-shadow:0 3px 10px rgba(240,168,60,.3);}
+  .die.locked{opacity:.40; cursor:default; filter:grayscale(.5) brightness(.7);}
+  .die.locked::after{content:"🔒"; position:absolute; top:2px; right:4px; font-size:11px; opacity:.7;}
+  .die.distracted{outline:2px dashed var(--hull); outline-offset:-4px; opacity:.55;}
+  .die.empty{border-style:dashed; opacity:.3;}
+  .die .tag{position:absolute; bottom:-13px; font-size:7.5px; color:var(--text); opacity:.7; white-space:nowrap;}
+  .die .tag.blocked{color:var(--hull); font-weight:bold; letter-spacing:.5px;}
+
+  .threat-card{border:1px solid var(--line); border-radius:7px; padding:7px 9px; margin-bottom:6px;
+    display:flex; justify-content:space-between; align-items:center; gap:8px; background:var(--panel-2);
+    box-shadow:0 1px 3px rgba(0,0,0,.15); transition:background .25s, box-shadow .25s;}
+  [data-theme="light"] .threat-card{box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .threat-card.external{border-left:3px solid var(--hull);}
+  .threat-card.internal{border-left:3px solid var(--shield);}
+  .threat-name{font-size:11.5px; font-weight:bold;}
+  .threat-effect{font-size:9.5px; color:var(--text); margin-top:2px; line-height:1.3; opacity:.85;}
+  .threat-nums{display:flex; gap:8px; align-items:flex-start; flex-shrink:0;}
+  .num-badge{width:28px; height:28px; border-radius:5px; background:#1B2740; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; border:1px solid var(--line);}
+  .num-badge.dmg{border-color:var(--hull); color:var(--hull); background:rgba(224,82,63,.12);}
+  .num-badge.act{border-color:var(--amber); color:var(--amber); background:rgba(240,168,60,.10);}
+  .num-badge-col{display:flex; flex-direction:column; align-items:center; gap:3px;}
+  .num-badge-lbl{font-size:7.5px; letter-spacing:1px; color:var(--dim); font-weight:bold;}
+  .empty-note{font-size:9.5px; color:var(--text); font-style:italic; opacity:.75;}
+  .mission-row{margin-top:5px; font-size:9.5px; color:var(--text); opacity:.85; border-top:1px dashed var(--line); padding-top:5px;
+    display:flex; align-items:center; justify-content:space-between; gap:6px;}
+  .mission-row.mission-can{color:var(--amber); border-color:var(--amber);}
+  .mission-row .mission-withdraw{padding:3px 7px; font-size:8.5px;}
+
+  .log{font-size:9.5px; color:var(--dim); max-height:80px; overflow-y:auto; line-height:1.5;}
+  .log div:first-child{color:var(--text);}
+
+  .actions{display:flex; gap:8px;}
+  .actions button{flex:1; padding:12px; border-radius:8px; border:none; font-weight:bold; font-size:13px; font-family:inherit;}
+  .btn-primary{background:var(--amber); color:#1a1200;}
+  .btn-primary:disabled{background:var(--line); color:var(--dim);}
+  .btn-ghost{background:transparent; border:1px solid var(--line) !important; color:var(--dim);}
+
+  .overlay{position:fixed; inset:0; background:rgba(5,8,14,.94); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px;}
+  .overlay .box{text-align:center; max-width:340px;}
+  .overlay h2{font-family:Georgia,serif; font-size:26px; margin-bottom:10px;}
+  .overlay p{font-size:12px; color:var(--dim); line-height:1.6; margin-bottom:18px;}
+  .hidden{display:none !important;}
+
+  /* Selector de dificultad: tarjetas con borde de color */
+  .diff-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .diff-card{
+    background:linear-gradient(180deg, rgba(20,30,50,.85), rgba(10,18,32,.85));
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 10px;
+    cursor:pointer;
+    text-align:center;
+    font-family:'Courier New',monospace;
+    transition:all .15s;
+    color:var(--text);
+  }
+  .diff-card:hover{
+    border-color:var(--amber);
+    background:linear-gradient(180deg, rgba(40,55,80,.9), rgba(20,35,55,.9));
+    transform:translateY(-2px);
+    box-shadow:0 4px 14px rgba(240,168,60,.18);
+  }
+  .diff-card:active{transform:translateY(0);}
+  .diff-card .diff-name{
+    display:block;
+    font-size:14px;
+    font-weight:bold;
+    letter-spacing:1.5px;
+    margin-bottom:6px;
+    color:var(--amber);
+  }
+  .diff-card .diff-remove{
+    display:block;
+    font-size:18px;
+    font-weight:bold;
+    margin-bottom:6px;
+  }
+  .diff-card .diff-hint{
+    display:block;
+    font-size:9px;
+    color:var(--dim);
+    line-height:1.4;
+  }
+  .diff-card.easy  {border-color:rgba(76,184,125,.45);}
+  .diff-card.easy  .diff-name{color:#4CB87D;}
+  .diff-card.medium{border-color:rgba(240,168,60,.45);}
+  .diff-card.medium .diff-name{color:var(--amber);}
+  .diff-card.hard  {border-color:rgba(224,82,63,.45);}
+  .diff-card.hard  .diff-name{color:#E0523F;}
+  .diff-card.short {border-color:rgba(155,111,224,.45);}
+  .diff-card.short .diff-name{color:#9B6FE0;}
+  .diff-card.fast  {border-color:rgba(63,182,217,.45);}
+  .diff-card.fast  .diff-name{color:#3FB6D9;}
+
+  .picker{position:fixed; inset:0; background:rgba(5,8,14,.85); display:flex; align-items:flex-end; z-index:40;}
+  .picker .sheet{background:var(--panel); border-top:1px solid var(--line); width:100%; max-width:480px; margin:0 auto; border-radius:14px 14px 0 0; padding:16px; max-height:70vh; overflow-y:auto;}
+  .picker h3{font-size:12px; letter-spacing:1px; color:var(--dim); margin:0 0 10px;}
+  .picker .opt{display:block; width:100%; text-align:left; background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:10px; margin-bottom:8px; font-size:12px; font-family:inherit;}
+  .picker .opt small{display:block; color:var(--dim); font-size:10px; margin-top:2px;}
+  .picker .cancel{width:100%; padding:10px; background:transparent; border:1px solid var(--line); color:var(--dim); border-radius:8px; font-family:inherit;}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>
+    <span>NAVE D-6</span>
+    <button class="theme-toggle" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema">🌙</button>
+  </h1>
+  <div class="top-row">
+    <div class="round-pill">RONDA<b id="roundVal">1</b></div>
+    <div class="phase-pill" id="phaseLabel">PASO 1 · TIRAR DADOS</div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="track hull" id="hullTrack"></div>
+    <div class="track shield" id="shieldTrack"></div>
+    <div class="ship" id="shipBoard">
+      <div class="ship-bg">
+        <svg viewBox="0 0 200 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--ship-stroke)">
+          <defs>
+            <linearGradient id="shipGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" style="stop-color:var(--ship-fill-1)"/>
+              <stop offset="58%" style="stop-color:var(--ship-fill-2)"/>
+              <stop offset="100%" style="stop-color:var(--ship-fill-3)"/>
+            </linearGradient>
+            <pattern id="gridPattern" width="10" height="10" patternUnits="userSpaceOnUse">
+              <path d="M10 0 L0 0 0 10" fill="none" style="stroke:var(--ship-grid)" stroke-width=".55" opacity=".30"/>
+            </pattern>
+            <clipPath id="shipClip">
+              <path d="
+                M72,10 L87,10
+                C84,18 85,29 100,34
+                C115,29 116,18 113,10
+                L128,10
+                L141,28 L141,48
+                C153,59 158,72 158,94
+                L158,181
+                C158,194 154,205 148,213
+                L163,232 L193,244
+                L193,260 L163,251
+                L148,242
+                L148,259 L136,259 L136,286 L117,286 L117,259
+                L83,259 L83,286 L64,286 L64,259 L52,259
+                L52,242 L37,251 L7,260 L7,244 L37,232
+                L52,213
+                C46,205 42,194 42,181
+                L42,94
+                C42,72 47,59 59,48
+                L59,28 Z"/>
+            </clipPath>
+            <path id="shipShape" d="
+              M72,10 L87,10
+              C84,18 85,29 100,34
+              C115,29 116,18 113,10
+              L128,10
+              L141,28 L141,48
+              C153,59 158,72 158,94
+              L158,181
+              C158,194 154,205 148,213
+              L163,232 L193,244
+              L193,260 L163,251
+              L148,242
+              L148,259 L136,259 L136,286 L117,286 L117,259
+              L83,259 L83,286 L64,286 L64,259 L52,259
+              L52,242 L37,251 L7,260 L7,244 L37,232
+              L52,213
+              C46,205 42,194 42,181
+              L42,94
+              C42,72 47,59 59,48
+              L59,28 Z"/>
+          </defs>
+
+          <use href="#shipShape" fill="url(#shipGrad)"/>
+          <rect x="0" y="0" width="200" height="300"
+                fill="url(#gridPattern)" clip-path="url(#shipClip)"/>
+
+          <!-- Separadores interiores, como en la referencia -->
+          <path d="M43,118 H157 M43,205 H157"
+                fill="none" style="stroke:var(--ship-stroke)" stroke-width="1"
+                stroke-dasharray="3 3" opacity=".65"/>
+
+          <!-- Contorno siempre visible por encima de la información -->
+          <use href="#shipShape" fill="none" style="stroke:var(--ship-stroke)"
+               stroke-width="2.2" vector-effect="non-scaling-stroke"/>
+        </svg>
+      </div>
+      <div class="scan-row" id="scanRow"></div>
+      <div class="dice-bay">
+        <div class="dice-bay-label">TRIPULACIÓN DISPONIBLE</div>
+        <div class="dice-row" id="diceRow"></div>
+        <div class="empty-note" id="hintLine"></div>
+      </div>
+      <div class="infirmary-bay" id="infirmaryBay" style="display:none">
+        <div class="infirmary-label">🏥 ENFERMERÍA</div>
+        <div class="dice-row" id="infirmaryRow"></div>
+      </div>
+      <div class="station-block" data-key="commander" id="st-commander">
+        <div class="station-head"><span class="station-icon">◆</span>Comandante</div>
+        <div class="station-desc">Cambia la cara de un dado disponible o vuelve a tirar los que estén libres.</div>
+        <div class="station-foot"><div class="staged-dots" id="staged-commander"></div><button class="mini-btn" id="resolve-commander">USAR</button></div>
+      </div>
+      <div class="station-block" data-key="tactical" id="st-tactical">
+        <div class="station-head"><span class="station-icon">▲</span>Táctico</div>
+        <div class="station-desc">1 de daño a una amenaza externa, +2 por cada táctico adicional apilado.</div>
+        <div class="station-foot"><div class="staged-dots" id="staged-tactical"></div><button class="mini-btn" id="resolve-tactical">DISPARAR</button></div>
+      </div>
+      <div class="row2">
+        <div class="station-block" data-key="medic" id="st-medic">
+          <div class="station-head"><span class="station-icon">✚</span>Médico</div>
+          <div class="station-desc">Libera la enfermería o retira un dado del escáner.</div>
+          <div class="station-foot"><div class="staged-dots" id="staged-medic"></div><button class="mini-btn" id="resolve-medic">USAR</button></div>
+        </div>
+        <div class="station-block" data-key="scientist" id="st-scientist">
+          <div class="station-head"><span class="station-icon">●</span>Científico</div>
+          <div class="station-desc">Recarga el escudo al máximo o lanza rayo de éxtasis.</div>
+          <div class="station-foot"><div class="staged-dots" id="staged-scientist"></div><button class="mini-btn" id="resolve-scientist">USAR</button></div>
+        </div>
+      </div>
+      <div class="station-block" data-key="engineer" id="st-engineer">
+        <div class="station-head"><span class="station-icon">⚙</span>Ingeniero</div>
+        <div class="station-desc">+1 al casco, +2 por cada ingeniero adicional apilado.</div>
+        <div class="station-foot"><div class="staged-dots" id="staged-engineer"></div><button class="mini-btn" id="resolve-engineer">REPARAR</button></div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <section class="panel">
+    <h2>AMENAZAS EXTERNAS</h2>
+    <div id="externalList"></div>
+  </section>
+
+  <section class="panel">
+    <h2>AMENAZAS INTERNAS</h2>
+    <div id="internalList"></div>
+  </section>
+
+  <section class="panel">
+    <h2>REGISTRO</h2>
+    <div class="log" id="log"></div>
+  </section>
+
+  <div class="actions">
+    <button class="btn-primary" id="mainAction">Tirar dados</button>
+    <button class="btn-ghost" id="resetBtn">Reiniciar</button>
+  </div>
+</div>
+
+<div class="overlay" id="difficultyOverlay">
+  <div class="box" style="max-width:380px;">
+    <h2 style="margin-bottom:4px">ELIGE DIFICULTAD</h2>
+    <p style="font-size:11px;color:var(--dim);margin-bottom:16px;line-height:1.5">Quitamos cartas de "No pasa nada" del mazo.<br>Cuantas más quitemos, más cartas de amenaza aparecerán.</p>
+    <div id="difficultyOpts" class="diff-grid"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="overlay">
+  <div class="box">
+    <h2 id="overTitle">FIN</h2>
+    <p id="overText"></p>
+    <button class="btn-primary" style="padding:12px 24px; border-radius:8px;" onclick="location.reload()">Nueva partida</button>
+  </div>
+</div>
+
+<div class="picker hidden" id="picker">
+  <div class="sheet">
+    <h3 id="pickerTitle">ELIGE UNA OPCIÓN</h3>
+    <div id="pickerOpts"></div>
+    <button class="cancel" id="pickerCancel">Cancelar</button>
+  </div>
+</div>
+
+<script>
+/* ---------- Datos ---------- */
+const STATIONS = {
+  commander:{name:'Comandante', color:'var(--commander)'},
+  tactical:{name:'Táctico', color:'var(--tactical)'},
+  medic:{name:'Médico', color:'var(--medic)'},
+  scientist:{name:'Científico', color:'var(--scientist)'},
+  engineer:{name:'Ingeniero', color:'var(--engineer)'}
+};
+const FACES = ['commander','tactical','medic','scientist','engineer','threat'];
+const FACE_ICON = {commander:'◆', tactical:'▲', medic:'✚', scientist:'●', engineer:'⚙', threat:'!'};
+
+function card(type,name,initial,activation,effect,missionType,missionCount){
+  return {type,name,initial,activation,effect,value:initial,missionType:missionType||null,missionCount:missionCount||0};
+}
+const DECK_TEMPLATE = [
+  card('external','Dron',1,2,'-1 al casco al activarse.'),
+  card('external','Piratas del espacio',3,2,'-2 al casco al activarse.'),
+  card('external','Piratas del espacio',2,2,'-2 al casco al activarse.'),
+  card('external','Incursores',2,2,'-2 al casco, ignora el escudo.'),
+  card('external','Incursores',2,2,'-2 al casco, ignora el escudo.'),
+  card('external','Bombardero',3,2,'-1 al casco y envía un dado a la enfermería.'),
+  card('external','Interceptor',3,2,'-1 al casco al activarse.'),
+  card('external','Interceptor X',4,3,'-1 al casco al activarse.'),
+  card('external','Meteoroide',4,1,'-1 al casco; al ser destruido, -5 extra.'),
+  card('external','Nave exploradora',3,1,'Si perdiste casco esta ronda, -1 adicional.'),
+  card('external','Nave insignia',4,3,'-3 al casco al activarse.'),
+  card('external','Nave de abordaje',4,2,'-2 al casco y envía un dado a la enfermería.'),
+  card('external','Nave de recompensa',4,2,'Destruye el escudo, -1 al casco.'),
+  card('external','Secuestradores',4,2,'-2 al casco al activarse.'),
+  card('external','Crucero de asalto',4,2,'-2 al casco al activarse.'),
+  card('external','Corsario',2,2,'-2 al casco al activarse.'),
+  card('external','Vientos solares',3,1,'-5 al casco; se descarta tras activarse.'),
+  card('external','Mercenario',3,3,'Si ninguna amenaza se activó esta ronda, -2 al casco.'),
+  card('internal','Nebulosa',0,3,'Mientras esté en juego no puedes usar ni recargar el escudo.','scientist',2),
+  card('internal','Salto temporal',0,4,'Todas las amenazas recuperan 1 punto de daño.','scientist',2),
+  card('internal','Invasores',0,3,'Envía un dado de tripulación a la enfermería.','tactical',2),
+  card('internal','Levantamiento robot',0,2,'Envía un dado de tripulación a la enfermería.','engineer',2),
+  card('internal','Amenazas ocultas',0,3,'Tras la fase de amenazas, se vuelve a tirar el dado de amenaza.','commander',2),
+  card('internal','Comunicaciones caídas',0,2,'No puedes usar al Comandante esta ronda.','commander',2),
+  card('internal','Pandemia',0,2,'Envía un dado de tripulación a la enfermería.','medic',3),
+  card('internal','Fuego amigo',0,3,'Todos los dados tácticos van a la enfermería; luego se descarta.'),
+  card('internal','Distracción',0,0,'Un dado queda bloqueado hasta que se desactive o active.','any',1),
+  card('internal','Subida de moral',0,4,'Libera un dado de la enfermería; luego se descarta.','any',1),
+  card('internal','Existencialismo cósmico',0,0,'Debe resolverse antes de asignar cualquier otro puesto.','any',2),
+];
+for(let i=0;i<6;i++) DECK_TEMPLATE.push(card('none','No pasa nada',0,0,'No ocurre nada.'));
+const MISSION_LABEL = {commander:'Comandante', tactical:'Táctico', medic:'Médico', scientist:'Científico', engineer:'Ingeniero', any:'cualquier tripulante'};
+
+let state=null;
+function freshState(removePanic, removeThreat){
+  // Quitamos `removePanic` cartas "No pasa nada" (máx 6) y `removeThreat` cartas de amenaza.
+  removePanic = Math.max(0, Math.min(6, removePanic||0));
+  removeThreat = Math.max(0, Math.min(20, removeThreat||0));
+  let removedPanic = 0;
+  let removedThreat = 0;
+  const baseDeck = DECK_TEMPLATE.filter(c => {
+    if(c.type==='none' && removedPanic<removePanic){ removedPanic++; return false; }
+    if(c.type==='external' && removedThreat<removeThreat){ removedThreat++; return false; }
+    return true;
+  });
+  const s = {
+    hull:8, shield:4, round:1, phase:'roll',
+    dice: Array.from({length:6},(_,i)=>({id:i, face:null, loc:'available', stationKey:null})),
+    deck: shuffle(baseDeck.map((c,i)=>({...c, uid:'c'+i+'_'+Math.random()}))),
+    external:[], internal:[], log:[], selectedDie:null, commsOffline:false,
+    threatsActivatedThisRound:false, scientistBeam:false,
+  };
+  return s;
+}
+function shuffle(a){a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a;}
+function log(msg){ state.log.unshift(msg); if(state.log.length>30) state.log.pop(); }
+function drawThreat(){
+  if(state.deck.length===0) return false;
+  const c = state.deck.pop();
+  c.missionAssigned = [];
+  if(c.type==='external'){ state.external.push(c); log('Amenaza externa detectada: '+c.name+'.'); }
+  else if(c.type==='internal'){ state.internal.push(c); log('Amenaza interna detectada: '+c.name+'.'); }
+  else { log('Carta robada: no pasa nada.'); }
+  return true;
+}
+// Ganas cuando ya no quedan cartas en el mazo
+function checkVictory(){
+  if(state.deck.length===0 && state.round>1){
+    endGame(true,'¡Sobreviviste! El mazo se ha agotado y la flota de rescate ha llegado a tiempo.');
+    return true;
+  }
+  return false;
+}
+
+function assignToMission(uid){
+  if(state.selectedDie==null || state.phase!=='assign') return;
+  const t = state.internal.find(x=>x.uid===uid) || state.external.find(x=>x.uid===uid);
+  if(!t || !t.missionType) return;
+  const d = state.dice.find(x=>x.id===state.selectedDie);
+  if(!d) return;
+  if(t.missionType!=='any' && d.face!==t.missionType){ flash('Esta misión necesita '+MISSION_LABEL[t.missionType]+'.'); return; }
+  d.loc='mission'; d.threatUid=uid;
+  t.missionAssigned.push(d.id);
+  state.selectedDie=null;
+  if(t.missionAssigned.length>=t.missionCount){
+    log(t.name+' desactivada por la tripulación.');
+    t.missionAssigned.forEach(id=>{ const dd=state.dice.find(x=>x.id===id); if(dd){ dd.loc='used'; dd.threatUid=null; }});
+    state.internal = state.internal.filter(x=>x.uid!==uid);
+    state.external = state.external.filter(x=>x.uid!==uid);
+  } else {
+    log('Se asigna un tripulante a la misión de '+t.name+' ('+t.missionAssigned.length+'/'+t.missionCount+').');
+  }
+  render();
+}
+function withdrawFromMission(uid){
+  if(state.phase!=='assign') return;
+  const t = state.internal.find(x=>x.uid===uid) || state.external.find(x=>x.uid===uid);
+  if(!t || t.missionAssigned.length===0) return;
+  const id = t.missionAssigned.pop();
+  const d = state.dice.find(x=>x.id===id);
+  if(d){ d.loc='available'; d.face=null; d.threatUid=null; }
+  log('Se retira un tripulante de la misión de '+t.name+'.');
+  render();
+}
+
+/* ---------- Selector modal ---------- */
+function showPicker(title, options){
+  return new Promise(resolve=>{
+    document.getElementById('pickerTitle').textContent = title;
+    const wrap = document.getElementById('pickerOpts');
+    wrap.innerHTML='';
+    options.forEach(opt=>{
+      const b = document.createElement('button');
+      b.className='opt';
+      b.innerHTML = opt.label + (opt.sub? '<small>'+opt.sub+'</small>' : '');
+      b.onclick=()=>{ document.getElementById('picker').classList.add('hidden'); resolve(opt.value); };
+      wrap.appendChild(b);
+    });
+    document.getElementById('pickerCancel').onclick=()=>{ document.getElementById('picker').classList.add('hidden'); resolve(null); };
+    document.getElementById('picker').classList.remove('hidden');
+  });
+}
+
+/* ---------- Fases ---------- */
+function rollDice(){
+  // Los dados no usados de la ronda anterior ya se re-lanzan automáticamente en gatherCrew.
+  // Aquí simplemente confirmamos la tirada y pasamos a la fase de asignación.
+  checkScanner();
+  log('Tirada de dados lista.');
+  state.phase='assign';
+  render();
+}
+function checkScanner(){
+  const inScanner = state.dice.filter(d=>d.loc==='scanner').length;
+  if(inScanner>=3){
+    state.dice.forEach(d=>{ if(d.loc==='scanner') d.loc='used'; });
+    log('¡Escáner saturado! Se roba una amenaza y se resetean los dados.');
+    if(!drawThreat()) log('El mazo está vacío. Si el próximo turno tampoco hay cartas, la flota de rescate habrá llegado.');
+  }
+}
+
+function toggleSelectDie(id){
+  const d = state.dice.find(x=>x.id===id);
+  if(!d || d.loc!=='available' || state.phase!=='assign') return;
+  state.selectedDie = state.selectedDie===id ? null : id;
+  render();
+}
+
+function stageDie(key){
+  if(state.selectedDie==null) return;
+  const d = state.dice.find(x=>x.id===state.selectedDie);
+  if(!d || d.face!==key) { flash('Ese dado no coincide con este puesto.'); return; }
+  if(key==='commander' && state.commsOffline){ flash('Comunicaciones caídas: el Comandante no se puede usar.'); return; }
+  d.loc='staged'; d.stationKey=key;
+  state.selectedDie=null;
+  render();
+}
+function flash(msg){ log(msg); render(); }
+
+async function resolveStation(key){
+  const staged = state.dice.filter(d=>d.loc==='staged' && d.stationKey===key);
+  if(staged.length===0) return;
+  const count = staged.length;
+  if(key==='engineer'){
+    const heal = 1 + (count-1)*2;
+    state.hull = Math.min(8, state.hull+heal);
+    log('Ingeniería repara '+heal+' de casco ('+count+' ingeniero(s)).');
+    staged.forEach(d=>d.loc='used');
+  } else if(key==='scientist'){
+    if(state.internal.some(t=>t.name==='Nebulosa')){
+      log('La Nebulosa impide usar Ciencia.'); staged.forEach(d=>{d.loc='available'; d.stationKey=null;}); render(); return;
+    }
+    const choice = await showPicker('CIENTÍFICO', [
+      {label:'Recargar escudo al máximo', value:'shield'},
+      {label:'Rayo de éxtasis', sub:'Bloquea la próxima activación de una amenaza', value:'beam'}
+    ]);
+    if(!choice){ render(); return; }
+    if(choice==='shield'){ state.shield=4; log('Ciencia recarga el escudo al máximo.'); }
+    else { log('Ciencia dispara el rayo de éxtasis (efecto simplificado: sin cambios de activación esta ronda).'); }
+    staged.forEach(d=>d.loc='used');
+  } else if(key==='medic'){
+    const inInfirmary = state.dice.filter(d=>d.loc==='infirmary').length;
+    const inScanner = state.dice.filter(d=>d.loc==='scanner').length;
+    const opts=[];
+    if(inInfirmary>0) opts.push({label:'Liberar toda la enfermería ('+inInfirmary+')', value:'infirmary'});
+    if(inScanner>0) opts.push({label:'Retirar un dado del escáner', value:'scanner'});
+    if(opts.length===0){ log('Médico asignado, sin nada que resolver.'); staged.forEach(d=>d.loc='used'); render(); return; }
+    const choice = await showPicker('MÉDICO', opts);
+    if(!choice){ render(); return; }
+    if(choice==='infirmary'){ state.dice.forEach(d=>{ if(d.loc==='infirmary') d.loc='used'; }); log('Médico libera la enfermería.'); }
+    else { const sc = state.dice.find(d=>d.loc==='scanner'); if(sc) sc.loc='used'; log('Médico retira un dado del escáner.'); }
+    staged.forEach(d=>d.loc='used');
+  } else if(key==='tactical'){
+    if(state.external.length===0){ log('Táctico asignado, sin blancos externos.'); staged.forEach(d=>d.loc='used'); render(); return; }
+    let target = state.external[0];
+    if(state.external.length>1){
+      const choice = await showPicker('ELIGE BLANCO', state.external.map((t,i)=>({label:t.name+' ('+t.value+')', value:i})));
+      if(choice==null){ render(); return; }
+      target = state.external[choice];
+    }
+    const dmg = 1 + (count-1)*2;
+    target.value -= dmg;
+    log('Táctico dispara '+dmg+' de daño a '+target.name+' ('+count+' táctico(s)).');
+    if(target.value<=0){
+      log(target.name+' destruida.');
+      if(target.name==='Meteoroide'){ state.hull-=5; log('Meteoroide destruido: -5 de casco adicional.'); }
+      state.external = state.external.filter(t=>t!==target);
+    }
+    staged.forEach(d=>d.loc='used');
+  } else if(key==='commander'){
+    // Con N dados de comandante apilados, puedes cambiar la cara de N dados disponibles.
+    // Si apilas 1 → cambias 1. Si apilas 2 → cambias 2. Etc.
+    const choice = await showPicker('COMANDANTE', [
+      {label:count>1?`Cambiar la cara de ${count} dados`:'Cambiar la cara de un dado', value:'change'},
+      {label:'Volver a tirar los dados disponibles', value:'reroll'}
+    ]);
+    if(!choice){ render(); return; }
+    if(choice==='reroll'){
+      state.dice.forEach(d=>{ if(d.loc==='available'){ d.face=FACES[Math.floor(Math.random()*6)]; if(d.face==='threat') d.loc='scanner'; }});
+      checkScanner();
+      log('Comandante vuelve a tirar los dados disponibles.');
+    } else {
+      // Cambia 'count' dados disponibles, uno a uno
+      let changed = 0;
+      for(let n=0; n<count; n++){
+        // Vuelve a leer los disponibles (alguno puede haberse cambiado a scanner)
+        const avail = state.dice.filter(d=>d.loc==='available');
+        if(avail.length===0){
+          log('No quedan dados disponibles para cambiar.');
+          break;
+        }
+        const dieChoice = await showPicker(`ELIGE UN DADO (${n+1}/${count})`, avail.map(d=>({label:STATIONS[d.face]?.name || 'Amenaza', value:d.id})));
+        if(dieChoice==null) break;
+        const faceChoice = await showPicker('NUEVA CARA', Object.keys(STATIONS).map(k=>({label:STATIONS[k].name, value:k})).concat([{label:'Amenaza detectada', value:'threat'}]));
+        if(!faceChoice) break;
+        const d = state.dice.find(x=>x.id===dieChoice);
+        d.face=faceChoice;
+        if(faceChoice==='threat') d.loc='scanner';
+        log('Comandante cambia un dado a '+ (STATIONS[faceChoice]?.name || 'Amenaza detectada') +'.');
+        changed++;
+        checkScanner();
+      }
+      if(changed===0) log('No se cambió ningún dado.');
+    }
+    staged.forEach(d=>d.loc='used');
+  }
+  render();
+}
+
+function goToActivation(){
+  drawThreat();
+  state.phase='activate';
+  render();
+}
+
+function activateThreats(){
+  const roll = 1+Math.floor(Math.random()*4);
+  log('Dado de amenaza: '+roll+'.');
+  state.threatsActivatedThisRound=false;
+  state.commsOffline=false;
+  [...state.internal].forEach(t=>{ if(t.activation===roll){ resolveInternal(t); state.threatsActivatedThisRound=true; }});
+  [...state.external].forEach(t=>{ if(t.activation===roll){ applyDamage(t); state.threatsActivatedThisRound=true; }});
+  if(!state.threatsActivatedThisRound){
+    state.external.filter(t=>t.name==='Mercenario').forEach(t=>applyDamage({...t, forced:true}));
+  }
+  if(state.hull<=0){ endGame(false,'El casco ha llegado a 0. La nave se pierde entre las estrellas.'); return; }
+  state.phase='gather';
+  render();
+}
+function applyDamage(t){
+  let dmg = t.name==='Vientos solares'?5 : t.name==='Nave insignia'?3 :
+    (t.name.includes('Piratas')||t.name==='Secuestradores'||t.name==='Nave de abordaje'||t.name==='Crucero de asalto'||t.name==='Incursores'||t.name==='Corsario')?2:1;
+  const ignoresShield = t.name==='Incursores';
+  if(t.name==='Nave de recompensa'){ state.shield=0; log('Nave de recompensa destruye el escudo.'); }
+  if(!ignoresShield && state.shield>0){ const abs=Math.min(state.shield,dmg); state.shield-=abs; dmg-=abs; }
+  state.hull-=dmg;
+  log(t.name+' se activa: -'+dmg+' al casco'+(ignoresShield?' (ignora escudo)':'')+'.');
+  if(t.name==='Bombardero'||t.name==='Nave de abordaje'){
+    const av = state.dice.find(d=>d.loc==='available'||d.loc==='used');
+    if(av){ av.loc='infirmary'; log('Un tripulante es enviado a la enfermería.'); }
+  }
+  // Vientos solares: se descarta tras activarse
+  if(t.name==='Vientos solares'){
+    state.external = state.external.filter(x=>x!==t);
+    log('Vientos solares se ha descartado tras activarse.');
+  }
+}
+function resolveInternal(t){
+  log(t.name+' se activa: '+t.effect);
+  if(t.name==='Salto temporal') state.external.forEach(e=> e.value=Math.min(e.initial, e.value+1));
+  if(t.name==='Comunicaciones caídas') state.commsOffline=true;
+  if(['Invasores','Levantamiento robot','Pandemia'].includes(t.name)){
+    const av = state.dice.find(d=>d.loc==='available'||d.loc==='used');
+    if(av) av.loc='infirmary';
+  }
+  if(t.name==='Distracción'){
+    // Bloquea un dado de tripulación (queda usado hasta la reunión).
+    // Prioriza dados disponibles (cara visible) para que el bloqueo sea claro.
+    const target = state.dice.find(d=>d.loc==='available') ||
+                   state.dice.find(d=>d.loc==='staged' || d.loc==='used' || d.loc==='scanner');
+    if(target){
+      // Si estaba staged, libero su estación
+      if(target.loc==='staged'){
+        const st = state.dice.filter(d=>d.loc==='staged' && d.stationKey===target.stationKey);
+        st.forEach(d=>{ d.loc='used'; d.stationKey=null; });
+      }
+      target.loc = 'used';
+      target.distracted = true;
+      log('Distracción bloquea un dado hasta la siguiente reunión.');
+    } else {
+      log('Distracción no encuentra dados que bloquear.');
+    }
+  }
+  if(t.name==='Fuego amigo'){
+    // "All tactical go directly to infirmary. Then discard."
+    // TODOS los dados que tengan la cara de TÁCTICO van a la enfermería,
+    // sin importar su estado actual (available, staged, used, scanner, mission).
+    const tacticals = state.dice.filter(d=>d.face==='tactical');
+    tacticals.forEach(d=>{
+      d.loc='infirmary'; d.stationKey=null;
+    });
+    if(tacticals.length>0){
+      log('Fuego amigo: '+tacticals.length+' dado(s) táctico(s) enviado(s) a la enfermería.');
+    } else {
+      log('Fuego amigo se activa pero no hay dados tácticos que enviar a la enfermería.');
+    }
+    // "Then discard" — la carta Fuego amigo se descarta tras activarse.
+    state.internal = state.internal.filter(x=>x!==t);
+    log('Fuego amigo se descarta tras activarse.');
+  }
+}
+function gatherCrew(){
+  let recovered=0;
+  let rerolled = 0;
+  state.dice.forEach(d=>{
+    if(d.loc==='used'){
+      // Dados usados vuelven a estar disponibles
+      d.loc='available'; d.face=null; d.stationKey=null; d.distracted=false; recovered++;
+    } else if(d.loc==='available'){
+      // Dados que NO se usaron se re-lanzan automáticamente
+      d.face = FACES[Math.floor(Math.random()*6)];
+      if(d.face==='threat') d.loc='scanner';
+      d.freshRoll = true; // marca para animación de "recién lanzado"
+      rerolled++;
+    }
+  });
+  checkScanner();
+  const stuck = state.dice.filter(d=>d.loc!=='available').length;
+  log('Reunión: '+recovered+' dado(s) recuperado(s); '+rerolled+' dado(s) no usado(s) se re-lanza(n) automáticamente.');
+  if(stuck===6){ endGame(false,'Toda tu tripulación está incapacitada. La misión fracasa.'); return; }
+  // Victoria: el mazo se ha vaciado y al menos estamos en la ronda 2
+  if(state.deck.length===0 && state.round>1){
+    endGame(true,'¡Sobreviviste! El mazo se ha agotado y la flota de rescate ha llegado a tiempo.');
+    return;
+  }
+  state.round++; state.phase='roll';
+  render();
+}
+function endGame(win,text){
+  document.getElementById('overTitle').textContent = win?'MISIÓN CUMPLIDA':'NAVE PERDIDA';
+  document.getElementById('overText').textContent = text;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+/* ---------- Render ---------- */
+function render(){
+  document.getElementById('roundVal').textContent = state.round;
+  const phaseNames={roll:'PASO 1 · TIRAR DADOS', assign:'PASO 3 · ASIGNAR TRIPULACIÓN', activate:'PASO 5 · ACTIVAR AMENAZAS', gather:'PASO 6 · REUNIR TRIPULACIÓN'};
+  document.getElementById('phaseLabel').textContent = phaseNames[state.phase];
+
+  // tracks
+  const hullTrack = document.getElementById('hullTrack'); hullTrack.innerHTML='';
+  for(let i=0;i<=8;i++){ const c=document.createElement('div'); c.className='cell'+(i<=Math.max(0,state.hull)?' on':''); c.textContent=i; hullTrack.appendChild(c); }
+  const shieldTrack = document.getElementById('shieldTrack'); shieldTrack.innerHTML='';
+  for(let i=0;i<=4;i++){ const c=document.createElement('div'); c.className='cell'+(i<=Math.max(0,state.shield)?' on':''); c.textContent=i; shieldTrack.appendChild(c); }
+
+  // scanner
+  const scanRow = document.getElementById('scanRow'); scanRow.innerHTML='';
+  const scannerDice = state.dice.filter(d=>d.loc==='scanner').length;
+  for(let i=0;i<3;i++){ const s=document.createElement('div'); s.className='scan-slot'+(i<scannerDice?' filled':''); s.textContent = i<scannerDice?'!':''; scanRow.appendChild(s); }
+
+  // stations
+  Object.keys(STATIONS).forEach(key=>{
+    const block = document.getElementById('st-'+key);
+    const icon = block.querySelector('.station-icon');
+    icon.style.background = STATIONS[key].color;
+    block.style.setProperty('--stc', STATIONS[key].color);
+    const usable = state.selectedDie!=null && state.dice.find(d=>d.id===state.selectedDie)?.face===key && !(key==='commander'&&state.commsOffline);
+    block.classList.toggle('usable', !!usable);
+    block.onclick = (e)=>{ if(e.target.closest('button')) return; if(state.phase==='assign') stageDie(key); };
+    const staged = state.dice.filter(d=>d.loc==='staged' && d.stationKey===key);
+    const dotsWrap = document.getElementById('staged-'+key); dotsWrap.innerHTML='';
+    staged.forEach(()=>{ const dot=document.createElement('div'); dot.className='staged-dot'; dotsWrap.appendChild(dot); });
+    const btn = document.getElementById('resolve-'+key);
+    btn.disabled = staged.length===0 || state.phase!=='assign';
+    btn.onclick = ()=>resolveStation(key);
+  });
+
+  // dados disponibles (arriba, zona principal)
+  const diceRow = document.getElementById('diceRow'); diceRow.innerHTML='';
+  // dados de enfermería (zona separada abajo)
+  const infirmaryRow = document.getElementById('infirmaryRow'); infirmaryRow.innerHTML='';
+  const infirmaryBay = document.getElementById('infirmaryBay');
+  const CREW_FACES = ['commander','tactical','medic','scientist','engineer'];
+  state.dice.forEach(d=>{
+    // La enfermería va a su zona propia
+    if(d.loc==='infirmary'){
+      const el=document.createElement('div');
+      let cls='die';
+      if(d.face && CREW_FACES.includes(d.face)) cls += ' crew-' + d.face;
+      cls += ' locked';
+      el.className=cls;
+      el.textContent = d.face? FACE_ICON[d.face] : '?';
+      el.title = d.face? (STATIONS[d.face]?.name||'Amenaza')+' en enfermería' : 'Enfermería';
+      infirmaryRow.appendChild(el);
+      return;
+    }
+    // El resto va a la zona principal
+    const el=document.createElement('div');
+    let cls='die';
+    const showCrewColor = d.loc==='available' && d.face && CREW_FACES.includes(d.face);
+    if(showCrewColor) cls += ' crew-' + d.face;
+    if(['staged','scanner','used','mission'].includes(d.loc)) cls+=' locked';
+    if(state.selectedDie===d.id) cls+=' selected';
+    if(!d.face) cls+=' empty';
+    // Animación de dado recién re-lanzado (gatherCrew marca d.freshRoll)
+    if(d.freshRoll){ cls += ' fresh-roll'; d.freshRoll = false; }
+    el.className=cls;
+    el.textContent = d.face? FACE_ICON[d.face] : '?';
+    const tag=document.createElement('div'); tag.className='tag';
+    let tagTxt = '';
+    if(d.loc==='available') tagTxt = d.face? (STATIONS[d.face]?.name||'Amenaza') : '';
+    else if(d.loc==='scanner')  tagTxt = 'Escáner';
+    else if(d.loc==='staged')   tagTxt = 'En puesto';
+    else if(d.loc==='mission')  tagTxt = 'Misión';
+    else if(d.loc==='used')     tagTxt = d.distracted ? '🔒 BLOQUEADO' : 'Usado';
+    tag.textContent = tagTxt;
+    if(d.loc==='used' && d.distracted) tag.classList.add('blocked');
+    el.appendChild(tag);
+    el.onclick=()=>toggleSelectDie(d.id);
+    diceRow.appendChild(el);
+  });
+  // Mostrar/ocultar la zona de enfermería
+  const inInfirmaryCount = state.dice.filter(d=>d.loc==='infirmary').length;
+  infirmaryBay.style.display = inInfirmaryCount>0 ? 'flex' : 'none';
+
+  document.getElementById('hintLine').textContent =
+    state.phase==='assign' ? (state.selectedDie!=null ? 'Dado seleccionado: toca un puesto para apilarlo, o toca "Misión" en una amenaza que lo acepte.' : 'Toca un dado disponible y luego un puesto o una misión de amenaza.') : '';
+
+  // threats
+  const selDie = state.selectedDie!=null ? state.dice.find(d=>d.id===state.selectedDie) : null;
+  function threatCardHtml(t, cls){
+    // Cada badge es una columna con número grande + etiqueta pequeña debajo
+    let badges;
+    if(cls==='external'){
+      badges = `
+        <div class="num-badge-col">
+          <div class="num-badge dmg">${Math.max(0,t.value)}</div>
+          <div class="num-badge-lbl">DAÑO</div>
+        </div>
+        <div class="num-badge-col">
+          <div class="num-badge act">${t.activation}</div>
+          <div class="num-badge-lbl">DADO</div>
+        </div>`;
+    } else {
+      badges = `
+        <div class="num-badge-col">
+          <div class="num-badge act">${t.activation||'-'}</div>
+          <div class="num-badge-lbl">DADO</div>
+        </div>`;
+    }
+    let missionHtml='';
+    if(t.missionType){
+      const canAssign = state.phase==='assign' && selDie && (t.missionType==='any' || selDie.face===t.missionType);
+      missionHtml = `<div class="mission-row${canAssign?' mission-can':''}" data-uid="${t.uid}" data-role="assign">
+        Misión: ${t.missionCount} × ${MISSION_LABEL[t.missionType]} — ${t.missionAssigned.length}/${t.missionCount}
+        ${t.missionAssigned.length>0?'<button class="mini-btn mission-withdraw" data-uid="'+t.uid+'" data-role="withdraw">Retirar</button>':''}
+      </div>`;
+    }
+    return `<div class="threat-card ${cls}"><div style="flex:1;min-width:0"><div class="threat-name">${t.name}</div><div class="threat-effect">${t.effect}</div>${missionHtml}</div>
+      <div class="threat-nums">${badges}</div></div>`;
+  }
+  const ext = document.getElementById('externalList'); ext.innerHTML='';
+  if(state.external.length===0) ext.innerHTML='<div class="empty-note">Sin amenazas externas detectadas.</div>';
+  state.external.forEach(t=>{ ext.innerHTML += threatCardHtml(t,'external'); });
+  const int = document.getElementById('internalList'); int.innerHTML='';
+  if(state.internal.length===0) int.innerHTML='<div class="empty-note">Sin amenazas internas activas.</div>';
+  state.internal.forEach(t=>{ int.innerHTML += threatCardHtml(t,'internal'); });
+  document.querySelectorAll('.mission-row').forEach(row=>{
+    row.addEventListener('click', (e)=>{
+      const withdrawBtn = e.target.closest('.mission-withdraw');
+      if(withdrawBtn){ withdrawFromMission(withdrawBtn.dataset.uid); return; }
+      assignToMission(row.dataset.uid);
+    });
+  });
+
+  document.getElementById('log').innerHTML = state.log.map(l=>'<div>'+l+'</div>').join('');
+
+  const mainBtn = document.getElementById('mainAction');
+  const anyStaged = state.dice.some(d=>d.loc==='staged');
+  if(state.phase==='roll'){ mainBtn.textContent='Asignar tripulación'; mainBtn.disabled=false; mainBtn.onclick=rollDice; }
+  else if(state.phase==='assign'){ mainBtn.textContent='Descubrir amenaza y continuar'; mainBtn.disabled = state.selectedDie!=null || anyStaged; mainBtn.onclick=goToActivation; }
+  else if(state.phase==='activate'){ mainBtn.textContent='Tirar dado de amenaza'; mainBtn.disabled=false; mainBtn.onclick=activateThreats; }
+  else if(state.phase==='gather'){ mainBtn.textContent='Reunir tripulación (ronda '+(state.round+1)+')'; mainBtn.disabled=false; mainBtn.onclick=gatherCrew; }
+}
+
+document.getElementById('resetBtn').onclick=()=>{ if(confirm('¿Reiniciar la partida?')) location.reload(); };
+
+// ===== Tema claro/oscuro =====
+(function setupTheme(){
+  const KEY = 'naveD6_theme';
+  const btn = document.getElementById('themeToggle');
+  let theme = localStorage.getItem(KEY) || 'dark';
+  function apply(t){
+    if(t==='light'){
+      document.documentElement.setAttribute('data-theme','light');
+      btn.textContent = '☀️';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      btn.textContent = '🌙';
+    }
+    localStorage.setItem(KEY, t);
+  }
+  apply(theme);
+  btn.onclick = ()=>{
+    theme = (theme==='light') ? 'dark' : 'light';
+    apply(theme);
+  };
+})();
+
+// Selector de dificultad al inicio
+// removePanic: nº de cartas "No pasa nada" quitadas
+// removeThreat: nº de cartas de amenaza quitadas (para acortar la partida)
+const DIFFICULTIES = [
+  {removePanic:1, removeThreat:0, name:'FÁCIL',   cls:'easy',   hint:'Quita 1 carta de "No pasa nada" del mazo'},
+  {removePanic:3, removeThreat:0, name:'MEDIO',   cls:'medium', hint:'Quita 3 cartas de "No pasa nada"'},
+  {removePanic:6, removeThreat:0, name:'DIFÍCIL', cls:'hard',   hint:'Quita las 6 cartas de "No pasa nada"'},
+  {removePanic:6, removeThreat:1, name:'CORTO',   cls:'short',  hint:'Sin cartas vacías + 1 amenaza fuera'},
+  {removePanic:6, removeThreat:3, name:'RÁPIDO',  cls:'fast',   hint:'Sin cartas vacías + 3 amenazas fuera'},
+];
+(function showDifficulty(){
+  const wrap = document.getElementById('difficultyOpts');
+  wrap.innerHTML = '';
+  DIFFICULTIES.forEach(d=>{
+    const total = d.removePanic + d.removeThreat;
+    const b = document.createElement('div');
+    b.className = 'diff-card ' + d.cls;
+    b.innerHTML = `
+      <span class="diff-remove">−${total}</span>
+      <span class="diff-name">${d.name}</span>
+      <span class="diff-hint">${d.hint}</span>`;
+    b.onclick = ()=>{
+      document.getElementById('difficultyOverlay').classList.add('hidden');
+      startGame(d.removePanic, d.removeThreat);
+    };
+    wrap.appendChild(b);
+  });
+})();
+function startGame(removePanic, removeThreat){
+  state = freshState(removePanic, removeThreat);
+  const diffName = DIFFICULTIES.find(x=>x.removePanic===removePanic && x.removeThreat===removeThreat)?.name || 'Custom';
+  log('Dificultad: '+diffName+' (mazo: '+state.deck.length+' cartas).');
+  log('Recibes una llamada de socorro… ¡es una trampa! Sobrevive hasta que llegue el rescate.');
+  // Lanzar los dados de la tripulación inicial automáticamente
+  state.dice.forEach(d=>{
+    if(d.loc==='available'){
+      d.face = FACES[Math.floor(Math.random()*6)];
+      if(d.face==='threat') d.loc='scanner';
+      d.freshRoll = true;
+    }
+  });
+  checkScanner();
+  log('Tirada inicial de dados de tripulación.');
+  drawThreat();
+  drawThreat();
+  render();
+}
+</script>
+</body>
+</html>
