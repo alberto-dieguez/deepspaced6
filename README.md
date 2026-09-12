@@ -1,4 +1,6 @@
-# 🚀 NAVE D-6
+[Deep Space D6](https://alberto-dieguez.github.io/deepspaced6)
+
+# 🚀 Deep Space D-6
 
 Versión digital/web del juego de dados **Deep Space D-6**, jugable directamente desde el navegador en móvil o escritorio.
 
