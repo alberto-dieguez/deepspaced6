@@ -199,6 +199,38 @@
   .num-badge.act{border-color:var(--amber); color:var(--amber); background:rgba(240,168,60,.10);}
   .num-badge-col{display:flex; flex-direction:column; align-items:center; gap:3px;}
   .num-badge-lbl{font-size:7.5px; letter-spacing:1px; color:var(--dim); font-weight:bold;}
+
+  /* Indicador de amenaza afectada por el rayo de éxtasis */
+  .beam-badge{
+    display:flex; flex-direction:column; align-items:center;
+    gap:2px; padding:4px 5px;
+    border-radius:5px;
+    background:rgba(76,184,125,.18);
+    border:1px solid rgba(76,184,125,.55);
+    animation: beam-pulse 1.4s ease-in-out infinite;
+  }
+  .beam-die{
+    display:flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:5px;
+    background:#4CB87D; color:#fff; font-size:13px; font-weight:bold;
+    box-shadow:0 0 8px rgba(76,184,125,.45);
+  }
+  .beam-label{
+    font-size:7px; letter-spacing:1px;
+    color:#4CB87D; font-weight:bold;
+  }
+  .threat-card.beam-locked{
+    outline:2px dashed rgba(76,184,125,.55);
+    outline-offset:3px;
+    background:rgba(76,184,125,.06);
+  }
+  [data-theme="light"] .threat-card.beam-locked{
+    background:rgba(76,184,125,.10);
+  }
+  @keyframes beam-pulse{
+    0%, 100% { box-shadow:0 0 6px rgba(76,184,125,.35); }
+    50%      { box-shadow:0 0 14px rgba(76,184,125,.65); }
+  }
   .empty-note{font-size:9.5px; color:var(--text); font-style:italic; opacity:.75;}
   .mission-row{margin-top:5px; font-size:9.5px; color:var(--text); opacity:.85; border-top:1px dashed var(--line); padding-top:5px;
     display:flex; align-items:center; justify-content:space-between; gap:6px;}
@@ -636,16 +668,44 @@ async function resolveStation(key){
     log('Ingeniería repara '+heal+' de casco ('+count+' ingeniero(s)).');
     staged.forEach(d=>d.loc='used');
   } else if(key==='scientist'){
-    if(state.internal.some(t=>t.name==='Nebulosa')){
-      log('La Nebulosa impide usar Ciencia.'); staged.forEach(d=>{d.loc='available'; d.stationKey=null;}); render(); return;
+    const hasNebulosa = state.internal.some(t=>t.name==='Nebulosa');
+    // Nebulosa SOLO bloquea el escudo. El rayo de éxtasis sigue funcionando.
+    const choices = [];
+    if(!hasNebulosa) choices.push({label:'Recargar escudo al máximo', value:'shield'});
+    // Ofrecemos rayo de éxtasis siempre (mientras haya amenazas a las que apuntar)
+    const totalThreats = state.external.length + state.internal.length;
+    if(totalThreats > 0){
+      choices.push({label:'Rayo de éxtasis', sub:'Bloquea la próxima activación de una amenaza', value:'beam'});
     }
-    const choice = await showPicker('CIENTÍFICO', [
-      {label:'Recargar escudo al máximo', value:'shield'},
-      {label:'Rayo de éxtasis', sub:'Bloquea la próxima activación de una amenaza', value:'beam'}
-    ]);
+    if(choices.length===0){
+      log('No hay acciones disponibles para el Científico (Nebulosa sin amenazas a las que apuntar).');
+      staged.forEach(d=>{d.loc='available'; d.stationKey=null;});
+      render(); return;
+    }
+    const choice = await showPicker('CIENTÍFICO', choices);
     if(!choice){ render(); return; }
-    if(choice==='shield'){ state.shield=4; log('Ciencia recarga el escudo al máximo.'); }
-    else { log('Ciencia dispara el rayo de éxtasis (efecto simplificado: sin cambios de activación esta ronda).'); }
+    if(choice==='shield'){
+      if(hasNebulosa){ log('La Nebulosa impide recargar el escudo.'); }
+      else { state.shield=4; log('Ciencia recarga el escudo al máximo.'); }
+    } else if(choice==='beam'){
+      // Rayo de éxtasis: elegir amenaza a la que aplicarlo
+      const targets = [
+        ...state.external.map((t,i)=>({label:'Externa: '+t.name+' (daño '+t.value+')', value:'ext:'+i})),
+        ...state.internal.map((t,i)=>({label:'Interna: '+t.name, value:'int:'+i}))
+      ];
+      if(targets.length===0){
+        log('No hay amenazas a las que disparar el rayo de éxtasis.');
+      } else {
+        const target = await showPicker('ELIGE AMENAZA PARA EL RAYO DE ÉXTASIS', targets);
+        if(target){
+          state.scientistBeam = target;
+          const [type, idxStr] = target.split(':');
+          const idx = parseInt(idxStr);
+          const name = type==='ext' ? state.external[idx]?.name : state.internal[idx]?.name;
+          log('Ciencia dispara el rayo de éxtasis sobre '+name+'.');
+        }
+      }
+    }
     staged.forEach(d=>d.loc='used');
   } else if(key==='medic'){
     const inInfirmary = state.dice.filter(d=>d.loc==='infirmary').length;
@@ -727,11 +787,37 @@ function activateThreats(){
   log('Dado de amenaza: '+roll+'.');
   state.threatsActivatedThisRound=false;
   state.commsOffline=false;
-  [...state.internal].forEach(t=>{ if(t.activation===roll){ resolveInternal(t); state.threatsActivatedThisRound=true; }});
-  [...state.external].forEach(t=>{ if(t.activation===roll){ applyDamage(t); state.threatsActivatedThisRound=true; }});
+  // Si el rayo de éxtasis está activo Y su objetivo coincide con el tipo, lo bloqueamos
+  let beamBlockedName = null;
+  if(state.scientistBeam){
+    const [type, idx] = state.scientistBeam.split(':');
+    const i = parseInt(idx);
+    if(type==='ext' && state.external[i]) beamBlockedName = state.external[i].name;
+    else if(type==='int' && state.internal[i]) beamBlockedName = state.internal[i].name;
+  }
+  [...state.internal].forEach(t=>{
+    if(t.activation===roll){
+      if(t.name===beamBlockedName){
+        log(t.name+' se activa, pero el rayo de éxtasis la bloquea.');
+      } else {
+        resolveInternal(t); state.threatsActivatedThisRound=true;
+      }
+    }
+  });
+  [...state.external].forEach(t=>{
+    if(t.activation===roll){
+      if(t.name===beamBlockedName){
+        log(t.name+' se activa, pero el rayo de éxtasis la bloquea.');
+      } else {
+        applyDamage(t); state.threatsActivatedThisRound=true;
+      }
+    }
+  });
   if(!state.threatsActivatedThisRound){
     state.external.filter(t=>t.name==='Mercenario').forEach(t=>applyDamage({...t, forced:true}));
   }
+  // Consumimos el rayo de éxtasis tras usarlo (solo bloquea una amenaza)
+  state.scientistBeam = null;
   if(state.hull<=0){ endGame(false,'El casco ha llegado a 0. La nave se pierde entre las estrellas.'); return; }
   state.phase='gather';
   render();
@@ -801,21 +887,25 @@ function resolveInternal(t){
 function gatherCrew(){
   let recovered=0;
   let rerolled = 0;
+  // Paso único: todos los dados vuelven a estar disponibles, y TODOS se re-lanzan.
+  // - Los que estaban 'used' se recuperan (sin cara, se lanzan).
+  // - Los 'available' que no se usaron también se re-lanzan.
   state.dice.forEach(d=>{
     if(d.loc==='used'){
-      // Dados usados vuelven a estar disponibles
-      d.loc='available'; d.face=null; d.stationKey=null; d.distracted=false; recovered++;
-    } else if(d.loc==='available'){
-      // Dados que NO se usaron se re-lanzan automáticamente
+      // Recuperar dado usado
+      d.loc='available'; d.stationKey=null; d.distracted=false; recovered++;
+    }
+    if(d.loc==='available'){
+      // Lanzar (o re-lanzar) el dado
       d.face = FACES[Math.floor(Math.random()*6)];
       if(d.face==='threat') d.loc='scanner';
-      d.freshRoll = true; // marca para animación de "recién lanzado"
+      d.freshRoll = true;
       rerolled++;
     }
   });
   checkScanner();
   const stuck = state.dice.filter(d=>d.loc!=='available').length;
-  log('Reunión: '+recovered+' dado(s) recuperado(s); '+rerolled+' dado(s) no usado(s) se re-lanza(n) automáticamente.');
+  log('Reunión: '+recovered+' dado(s) recuperado(s); '+rerolled+' dado(s) re-lanzado(s) automáticamente.');
   if(stuck===6){ endGame(false,'Toda tu tripulación está incapacitada. La misión fracasa.'); return; }
   // Victoria: el mazo se ha vaciado y al menos estamos en la ronda 2
   if(state.deck.length===0 && state.round>1){
@@ -918,6 +1008,14 @@ function render(){
 
   // threats
   const selDie = state.selectedDie!=null ? state.dice.find(d=>d.id===state.selectedDie) : null;
+  // Calcula qué amenaza está afectada por el rayo de éxtasis (si lo hay)
+  let beamTargetUid = null;
+  if(state.scientistBeam){
+    const [type, idxStr] = state.scientistBeam.split(':');
+    const idx = parseInt(idxStr);
+    if(type==='ext' && state.external[idx]) beamTargetUid = state.external[idx].uid;
+    else if(type==='int' && state.internal[idx]) beamTargetUid = state.internal[idx].uid;
+  }
   function threatCardHtml(t, cls){
     // Cada badge es una columna con número grande + etiqueta pequeña debajo
     let badges;
@@ -946,8 +1044,15 @@ function render(){
         ${t.missionAssigned.length>0?'<button class="mini-btn mission-withdraw" data-uid="'+t.uid+'" data-role="withdraw">Retirar</button>':''}
       </div>`;
     }
-    return `<div class="threat-card ${cls}"><div style="flex:1;min-width:0"><div class="threat-name">${t.name}</div><div class="threat-effect">${t.effect}</div>${missionHtml}</div>
-      <div class="threat-nums">${badges}</div></div>`;
+    // Indicador visual del rayo de éxtasis: badge de Científico en verde sobre la amenaza
+    const beamBadge = (beamTargetUid===t.uid) ?
+      `<div class="beam-badge" title="Afectada por el rayo de éxtasis del Científico">
+        <span class="beam-die">●</span>
+        <span class="beam-label">RAYO</span>
+      </div>` : '';
+    const beamClass = (beamTargetUid===t.uid) ? ' beam-locked' : '';
+    return `<div class="threat-card ${cls}${beamClass}"><div style="flex:1;min-width:0"><div class="threat-name">${t.name}</div><div class="threat-effect">${t.effect}</div>${missionHtml}</div>
+      <div class="threat-nums">${badges}${beamBadge}</div></div>`;
   }
   const ext = document.getElementById('externalList'); ext.innerHTML='';
   if(state.external.length===0) ext.innerHTML='<div class="empty-note">Sin amenazas externas detectadas.</div>';
