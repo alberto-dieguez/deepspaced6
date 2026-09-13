@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>NAVE D-6</title>
+<title>Deep Space D6</title>
 <style>
   /* ===== TEMAS ===== */
   :root{
@@ -102,7 +102,7 @@
     background:var(--panel-2);
   }
   .station-head{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:bold; color:var(--text);}
-  .station-desc{font-size:9.5px; color:var(--text); line-height:1.3; opacity:.82;}
+  .station-desc{font-size:10px; color:var(--text); line-height:1.4; opacity:1; font-weight:500;}
   .station-foot{display:flex; align-items:center; gap:6px; margin-top:2px;}
   .row2{display:flex; gap:7px;}
   .row2 > .station-block{flex:1; min-width:0;}
@@ -155,12 +155,12 @@
     display:flex; flex-direction:column; gap:3px;}
   .station-block.usable{border-color:var(--stc, var(--amber)); box-shadow:0 0 0 1px var(--stc,var(--amber)) inset;}
   .station-head{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:bold; color:var(--text);}
-  .station-icon{width:21px; height:21px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#0a0e17; font-weight:bold; flex-shrink:0;}
-  .station-desc{font-size:9.5px; color:var(--text); line-height:1.35; opacity:.85;}
+  .station-icon{width:21px; height:21px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; font-weight:bold; flex-shrink:0; text-shadow:0 1px 1px rgba(0,0,0,.35);}
+  .station-desc{font-size:10px; color:var(--text); line-height:1.4; opacity:1; font-weight:500;}
   .station-foot{display:flex; align-items:center; gap:6px; margin-top:2px;}
   .staged-dots{display:flex; gap:3px; flex:1;}
   .staged-dot{width:14px; height:14px; border-radius:3px; background:var(--stc,var(--amber)); opacity:.85;}
-  .mini-btn{background:var(--stc,var(--amber)); color:#0a0e17; border:none; border-radius:5px; padding:4px 8px; font-size:9px; font-weight:bold;}
+  .mini-btn{background:var(--stc,var(--amber)); color:#fff; border:none; border-radius:5px; padding:5px 9px; font-size:9.5px; font-weight:bold; text-shadow:0 1px 1px rgba(0,0,0,.3); letter-spacing:.5px;}
   .mini-btn:disabled{background:var(--line); color:var(--dim);}
   .row2{display:flex; gap:7px;}
   .row2 > .station-block{flex:1;}
@@ -182,13 +182,17 @@
   .die.locked::after{content:"🔒"; position:absolute; top:2px; right:4px; font-size:11px; opacity:.7;}
   .die.distracted{outline:2px dashed var(--hull); outline-offset:-4px; opacity:.55;}
   .die.empty{border-style:dashed; opacity:.3;}
-  .die .tag{position:absolute; bottom:-13px; font-size:7.5px; color:var(--text); opacity:.7; white-space:nowrap;}
+  .die .tag{position:absolute; bottom:-13px; font-size:8px; color:var(--text); opacity:.95; white-space:nowrap; font-weight:600;}
+  [data-theme="light"] .die .tag{opacity:1; color:#0d1422; font-weight:bold;}
   .die .tag.blocked{color:var(--hull); font-weight:bold; letter-spacing:.5px;}
 
   .threat-card{border:1px solid var(--line); border-radius:7px; padding:7px 9px; margin-bottom:6px;
     display:flex; justify-content:space-between; align-items:center; gap:8px; background:var(--panel-2);
     box-shadow:0 1px 3px rgba(0,0,0,.15); transition:background .25s, box-shadow .25s;}
   [data-theme="light"] .threat-card{box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  [data-theme="light"] .station-block{background:#FFFFFF; border-color:#9DA8BA;}
+  [data-theme="light"] .station-head{color:#0d1422;}
+  [data-theme="light"] .station-desc{color:#0d1422; opacity:1; font-weight:600;}
   .threat-card.external{border-left:3px solid var(--hull);}
   .threat-card.internal{border-left:3px solid var(--shield);}
   .threat-card.locking{outline:2px solid #F0A83C; outline-offset:3px; animation: lock-pulse 1.5s ease-in-out infinite;}
@@ -210,11 +214,15 @@
     50%      { box-shadow:0 0 8px 2px rgba(240,168,60,.5); }
   }
   .threat-name{font-size:11.5px; font-weight:bold;}
-  .threat-effect{font-size:9.5px; color:var(--text); margin-top:2px; line-height:1.3; opacity:.85;}
+  .threat-effect{font-size:10px; color:var(--text); margin-top:2px; line-height:1.4; opacity:1; font-weight:500;}
   .threat-nums{display:flex; gap:8px; align-items:flex-start; flex-shrink:0;}
-  .num-badge{width:28px; height:28px; border-radius:5px; background:#1B2740; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; border:1px solid var(--line);}
+  .num-badge{min-width:28px; height:28px; padding:0 5px; border-radius:5px; background:#1B2740; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold; border:1px solid var(--line); white-space:nowrap;}
   .num-badge.dmg{border-color:var(--hull); color:var(--hull); background:rgba(224,82,63,.12);}
-  .num-badge.act{border-color:var(--amber); color:var(--amber); background:rgba(240,168,60,.10);}
+  .num-badge.act{border-color:var(--amber); color:var(--amber); background:rgba(240,168,60,.10); flex-wrap:wrap; line-height:1.05; text-align:center;}
+  .num-badge.act.wide{width:auto; max-width:72px; height:auto; min-height:28px; padding:3px 5px; display:grid; grid-template-columns:repeat(2, 1fr); gap:3px; align-content:center; justify-items:center;}
+  .num-badge.act.wide.solo{grid-template-columns:1fr; max-width:36px;}
+  .num-badge.act.wide span{display:inline-block; min-width:18px; padding:1px 4px; border-radius:3px; background:rgba(240,168,60,.18); font-size:11px;}
+  .num-badge.act.auto{border-color:#888; color:#aaa; background:rgba(255,255,255,.04); font-size:9px; letter-spacing:1px; font-weight:bold;}
   .num-badge-col{display:flex; flex-direction:column; align-items:center; gap:3px;}
   .num-badge-lbl{font-size:7.5px; letter-spacing:1px; color:var(--dim); font-weight:bold;}
 
@@ -249,13 +257,15 @@
     0%, 100% { box-shadow:0 0 6px rgba(76,184,125,.35); }
     50%      { box-shadow:0 0 14px rgba(76,184,125,.65); }
   }
-  .empty-note{font-size:9.5px; color:var(--text); font-style:italic; opacity:.75;}
+  .empty-note{font-size:10px; color:var(--text); font-style:italic; opacity:.95; font-weight:500;}
   .mission-row{margin-top:5px; font-size:9.5px; color:var(--text); opacity:.85; border-top:1px dashed var(--line); padding-top:5px;
     display:flex; align-items:center; justify-content:space-between; gap:6px;}
   .mission-row.mission-can{color:var(--amber); border-color:var(--amber);}
   .mission-row .mission-withdraw{padding:3px 7px; font-size:8.5px;}
 
   .log{font-size:9.5px; color:var(--dim); max-height:80px; overflow-y:auto; line-height:1.5;}
+  .log .die-icon{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:4px; color:#fff; font-size:10px; font-weight:bold; vertical-align:-2px; margin:0 2px; box-shadow:0 0 0 1px rgba(255,255,255,.15) inset;}
+  .log .threat-roll{display:inline-block; min-width:18px; padding:1px 6px; margin:0 2px; border-radius:4px; background:var(--hull); color:#fff; font-size:12px; font-weight:bold; letter-spacing:.5px; text-align:center; vertical-align:-1px; box-shadow:0 0 0 1px rgba(255,255,255,.15) inset;}
   .log div:first-child{color:var(--text);}
 
   .actions{display:flex; gap:8px;}
@@ -265,9 +275,9 @@
   .btn-ghost{background:transparent; border:1px solid var(--line) !important; color:var(--dim);}
 
   .overlay{position:fixed; inset:0; background:rgba(5,8,14,.94); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px;}
-  .overlay .box{text-align:center; max-width:340px;}
-  .overlay h2{font-family:Georgia,serif; font-size:26px; margin-bottom:10px;}
-  .overlay p{font-size:12px; color:var(--dim); line-height:1.6; margin-bottom:18px;}
+  .overlay .box{text-align:center; max-width:340px; color:#DCE6F5;}
+  .overlay h2{font-family:Georgia,serif; font-size:26px; margin-bottom:10px; color:#F0A83C;}
+  .overlay p{font-size:12px; color:#B5C2D8; line-height:1.6; margin-bottom:18px;}
   .hidden{display:none !important;}
 
   /* Selector de dificultad: tarjetas con borde de color */
@@ -306,9 +316,10 @@
   }
   .diff-card .diff-hint{
     display:block;
-    font-size:9px;
-    color:var(--dim);
+    font-size:9.5px;
+    color:#B5C2D8;
     line-height:1.4;
+    font-weight:500;
   }
   .diff-card.easy  {border-color:rgba(76,184,125,.45);}
   .diff-card.easy  .diff-name{color:#4CB87D;}
@@ -320,6 +331,19 @@
   .diff-card.short .diff-name{color:#9B6FE0;}
   .diff-card.fast  {border-color:rgba(63,182,217,.45);}
   .diff-card.fast  .diff-name{color:#3FB6D9;}
+
+  /* Light mode: mantener el fondo oscuro de las tarjetas, solo ajustar el hint para que se lea */
+  [data-theme="light"] .diff-card{
+    background:linear-gradient(180deg, rgba(20,30,50,.95), rgba(10,18,32,.95));
+    color:#DCE6F5;
+    border-color:#3D5BC2;
+  }
+  [data-theme="light"] .diff-card:hover{
+    background:linear-gradient(180deg, rgba(40,55,80,.98), rgba(20,35,55,.98));
+    box-shadow:0 4px 14px rgba(240,168,60,.22);
+  }
+  [data-theme="light"] .diff-card .diff-remove{color:#F0A83C;}
+  [data-theme="light"] .diff-card .diff-hint{color:#B5C2D8; font-weight:600; opacity:1;}
 
   .picker{position:fixed; inset:0; background:rgba(5,8,14,.85); display:flex; align-items:flex-end; z-index:40;}
   .picker .sheet{background:var(--panel); border-top:1px solid var(--line); width:100%; max-width:480px; margin:0 auto; border-radius:14px 14px 0 0; padding:16px; max-height:70vh; overflow-y:auto;}
@@ -333,7 +357,7 @@
 <body>
 <div id="app">
   <h1>
-    <span>NAVE D-6</span>
+    <span>Deep Space D6</span>
     <button class="theme-toggle" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema">🌙</button>
   </h1>
   <div class="top-row">
@@ -514,11 +538,13 @@ const FACES = ['commander','tactical','medic','scientist','engineer','threat'];
 const FACE_ICON = {commander:'◆', tactical:'▲', medic:'✚', scientist:'●', engineer:'⚙', threat:'!'};
 
 function card(type,name,initial,activation,effect,missionType,missionCount){
-  // activation puede ser un número (1-5) o un array de números [1,3,4,5]
+  // activation puede ser un número (1-6) o un array de números [1,3,4,5]
   // si es array, la carta se activa con cualquiera de esos valores
   // un array vacío [] significa que la carta NO se activa por dado de amenaza
+  // missionType puede ser un string o array de tipos permitidos (any = cualquiera)
   const act = Array.isArray(activation) ? activation : [activation];
-  return {type,name,initial,activation:act,effect,value:initial,missionType:missionType||null,missionCount:missionCount||0};
+  const mt = Array.isArray(missionType) ? missionType : (missionType?[missionType]:null);
+  return {type,name,initial,activation:act,effect,value:initial,missionType:mt,missionCount:missionCount||0};
 }
 const DECK_TEMPLATE = [
   // === EXTERNAS (según manual v0.62 en español) ===
@@ -544,6 +570,8 @@ const DECK_TEMPLATE = [
   card('external','Nave Exploradora',3,[],'Si pierdes Casco esta ronda, pierde 1 adicional.'),
   // Bombardero — dmg=1, envía a enfermería
   card('external','Bombardero',3,[3,4],'-1 Casco, envía una unidad a la enfermería.'),
+  // Nebulosa (EXTERNA nivel 3, dmg=0 inicial, quita 1 Salud al activarse, ignorando escudo)
+  card('external','Nebulosa',3,[1,2,3,4,5],'Escudos desactivados. -1 Salud; al destruirla, escudos activados.',['scientist'],2),
   // Nave del Almirante — dmg=3
   card('external','Nave del Almirante',4,[4,5,6],'-3 Casco.'),
   // Nave de Abordaje — dmg=2, envía a enfermería
@@ -563,15 +591,14 @@ const DECK_TEMPLATE = [
   card('external','Mercenario',3,[],'Si ninguna amenaza se activó esta ronda, -2 Casco.'),
 
   // === INTERNAS (en español) ===
-  card('internal','Nebulosa',3,[1,2,3,4,5],'Escudos desactivados. -1 Salud; al destruirla, escudos activados.','scientist',2),
-  card('internal','Fuego Amigo',0,[],'Toda tripulación de Disparar Láseres va a enfermería, luego descarta.'),
+  card('internal','Fuego Amigo',0,[],'Toda tripulación de Disparar Láseres va a enfermería, luego descarta.',['tactical'],1),
   card('internal','Existencialismo Cósmico',0,[],'Debe completarse antes de asignar cualquier otro tripulante.','any',1),
   card('internal','Amenaza Oculta',2,[2],'Tras la fase de amenaza, tira el dado de amenaza otra vez.','commander',2),
   card('internal','Distraído',3,[3,4],'Devuelve esta unidad, luego descarta.','tactical',1),
   card('internal','Túnel del Tiempo',2,[2],'Todas las amenazas recuperan 1 daño.','scientist',2),
   card('internal','Sube la Moral',6,[6],'Devuelve un dado de tripulación, luego descarta.','any',1),
-  card('internal','Explosión del Panel',0,[],'No puedes asignar: naranja naranja (Reparar Casco).','tactical',1),
-  card('internal','Pandemia',1,[1],'Envía una unidad a la enfermería.','medic',1),
+  card('internal','Explosión del Panel',0,[],'No puedes asignar: naranja naranja (Reparar Casco).','engineer',2),
+  card('internal','Pandemia',1,[1],'Envía una unidad a la enfermería.',['medic','scientist'],1),
   card('internal','Invasores',2,[2,4],'Envía una unidad a la enfermería.','tactical',2),
   card('internal','Sistema Apagado',0,[],'No puedes asignar: diamante (Comando).','commander',1),
   card('internal','Revolución Robótica',3,[1,2,3],'Envía una unidad a la enfermería.','engineer',1),
@@ -627,7 +654,12 @@ function assignToMission(uid){
   if(!t || !t.missionType) return;
   const d = state.dice.find(x=>x.id===state.selectedDie);
   if(!d) return;
-  if(t.missionType!=='any' && d.face!==t.missionType){ flash('Esta misión necesita '+MISSION_LABEL[t.missionType]+'.'); return; }
+  // missionType puede ser 'any' o un array de tipos aceptados
+  const accepts = Array.isArray(t.missionType) ? t.missionType : [t.missionType];
+  if(!accepts.includes('any') && !accepts.includes(d.face)){
+    const labels = accepts.map(x => MISSION_LABEL[x]||x).join(' o ');
+    flash('Esta misión necesita '+labels+'.'); return;
+  }
   d.loc='mission'; d.threatUid=uid;
   t.missionAssigned.push(d.id);
   state.selectedDie=null;
@@ -661,6 +693,7 @@ function showPicker(title, options){
     options.forEach(opt=>{
       const b = document.createElement('button');
       b.className='opt';
+      // Permitir HTML en el label para mostrar dados personalizados
       b.innerHTML = opt.label + (opt.sub? '<small>'+opt.sub+'</small>' : '');
       b.onclick=()=>{ document.getElementById('picker').classList.add('hidden'); resolve(opt.value); };
       wrap.appendChild(b);
@@ -668,6 +701,12 @@ function showPicker(title, options){
     document.getElementById('pickerCancel').onclick=()=>{ document.getElementById('picker').classList.add('hidden'); resolve(null); };
     document.getElementById('picker').classList.remove('hidden');
   });
+}
+// Genera un dado visual mini (12x12) para usar en labels HTML
+function dieMini(face){
+  const color = STATIONS[face]?.color || '#888';
+  const icon = FACE_ICON[face] || '!';
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:${color};color:#fff;font-size:11px;font-weight:bold;vertical-align:middle;margin-right:4px;">${icon}</span>`;
 }
 
 /* ---------- Fases ---------- */
@@ -723,7 +762,7 @@ async function resolveStation(key){
     log('Ingeniería repara '+heal+' de casco ('+count+' ingeniero(s)).');
     staged.forEach(d=>d.loc='used');
   } else if(key==='scientist'){
-    const hasNebulosa = state.internal.some(t=>t.name==='Nebulosa');
+    const hasNebulosa = state.external.some(t=>t.name==='Nebulosa') || state.internal.some(t=>t.name==='Nebulosa');
     // Nebulosa SOLO bloquea el escudo. El rayo de éxtasis sigue funcionando.
     const choices = [];
     if(!hasNebulosa) choices.push({label:'Recargar escudo al máximo', value:'shield'});
@@ -817,14 +856,31 @@ async function resolveStation(key){
           log('No quedan dados disponibles para cambiar.');
           break;
         }
-        const dieChoice = await showPicker(`ELIGE UN DADO (${n+1}/${count})`, avail.map(d=>({label:STATIONS[d.face]?.name || 'Amenaza', value:d.id})));
+        const dieChoice = await showPicker(`ELIGE UN DADO (${n+1}/${count})`, avail.map(d=>{
+          const face = d.face;
+          const icon = FACE_ICON[face] || '!';
+          const color = STATIONS[face]?.color || '#888';
+          const name = STATIONS[face]?.name || 'Amenaza';
+          return {label:`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:${color};color:#fff;font-size:11px;font-weight:bold;vertical-align:middle;margin-right:6px;">${icon}</span>${name}`, value:d.id};
+        }));
         if(dieChoice==null) break;
-        const faceChoice = await showPicker('NUEVA CARA', Object.keys(STATIONS).map(k=>({label:STATIONS[k].name, value:k})).concat([{label:'Amenaza detectada', value:'threat'}]));
+        const faceChoice = await showPicker('NUEVA CARA', Object.keys(STATIONS).map(k=>{
+          const icon = FACE_ICON[k] || '?';
+          const color = STATIONS[k]?.color || '#888';
+          return {label:`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:${color};color:#fff;font-size:11px;font-weight:bold;vertical-align:middle;margin-right:6px;">${icon}</span>${STATIONS[k].name}`, value:k};
+        }).concat([{label:`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:#888;color:#fff;font-size:11px;font-weight:bold;vertical-align:middle;margin-right:6px;">!</span>Amenaza detectada`, value:'threat'}]));
         if(!faceChoice) break;
         const d = state.dice.find(x=>x.id===dieChoice);
+        const oldFace = d.face;
         d.face=faceChoice;
         if(faceChoice==='threat') d.loc='scanner';
-        log('Comandante cambia un dado a '+ (STATIONS[faceChoice]?.name || 'Amenaza detectada') +'.');
+        // Log con ícono del dado resultante para mejor visualización
+        const newIcon = FACE_ICON[faceChoice] || '!';
+        const newColor = STATIONS[faceChoice]?.color || '#888';
+        const newName = STATIONS[faceChoice]?.name || 'Amenaza detectada';
+        const oldIcon = FACE_ICON[oldFace] || '?';
+        const oldColor = STATIONS[oldFace]?.color || '#888';
+        log(`Comandante cambia un dado: <span class="die-icon" style="background:${oldColor}">${oldIcon}</span> → <span class="die-icon" style="background:${newColor}">${newIcon}</span> ${newName}`);
         changed++;
         checkScanner();
       }
@@ -842,9 +898,9 @@ function goToActivation(){
 }
 
 function activateThreats(){
-  // Dado de amenaza: 1-5 (según manual v0.62)
-  const roll = 1+Math.floor(Math.random()*5);
-  log('Dado de amenaza: '+roll+'.');
+  // Dado de amenaza: 1-6 (según manual v0.62)
+  const roll = 1+Math.floor(Math.random()*6);
+  log(`Dado de amenaza: <span class="threat-roll">${roll}</span>.`);
   state.threatsActivatedThisRound=false;
   state.commsOffline=false;
   state.panelExplosion=false;
@@ -856,9 +912,8 @@ function activateThreats(){
     if(type==='ext' && state.external[i]) beamBlockedName = state.external[i].name;
     else if(type==='int' && state.internal[i]) beamBlockedName = state.internal[i].name;
   }
-  // Mercenario NO se procesa aquí: solo se activa si NINGUNA amenaza se activó.
+  // Mercenario (externa) NO se procesa aquí: solo se activa si NINGUNA amenaza se activó.
   [...state.internal].forEach(t=>{
-    if(t.name==='Mercenario') return; // skip, se maneja al final
     if(t.activation.includes(roll)){
       if(t.name===beamBlockedName){
         log(t.name+' se activa, pero el rayo de éxtasis la bloquea.');
@@ -868,7 +923,7 @@ function activateThreats(){
     }
   });
   [...state.external].forEach(t=>{
-    if(t.name==='Mercenario') return; // skip
+    if(t.name==='Mercenario') return; // skip, se maneja al final
     if(t.activation.includes(roll)){
       if(t.name===beamBlockedName){
         log(t.name+' se activa, pero el rayo de éxtasis la bloquea.');
@@ -893,26 +948,31 @@ function activateThreats(){
 function applyDamage(t){
   // Tabla de daño correcta según manual (incluye TODAS las cartas con dmg=2).
   // Amenazas que quitan 2 al casco: Piratas, Secuestradores, Nave de abordaje,
-  // Crucero de asalto, Incursores (ignora escudo), Corsario.
+  // Crucero de asalto, Saqueadores (ignora escudo), Corsario.
   // NOTA: las cartas con dmg=1 que tienen efectos especiales
   //   (Bombardero: -1 + enfermeria; Nave exploradora: -1 + extra; Meteoroide: -1 + extra)
   //   se manejan aparte en esta misma función.
-  const NAME_5DMG = ['Vientos Solares'];
   const NAME_3DMG = ['Nave del Almirante'];
   const NAME_2DMG = ['Piratas Espaciales','Secuestradores','Nave de Abordaje','Crucero de Asalto','Saqueadores','Corsario','Mercenario'];
-  // Bombardero Ligero puede ser dmg=1 o dmg=2 (según carta). Lo dejamos con dmg=2 por defecto.
-  const NAME_2DMG_VARIANT = ['Bombardero Ligero']; // puede ser 1 o 2; lo trato como 2 (la carta de dmg 2 es más común)
+  // Bombardero Ligero tiene 2 cartas: una con dmg=1 y otra con dmg=2.
+  // Las identificamos por su initial value (2 vs 2 — no se distingue) o por el texto.
+  // Por defecto, las que tienen initial=2 son dmg=2; las que tienen initial=2 también son dmg=2 (mismo nivel).
+  // Para distinguirlas mejor, añadimos un campo custom al objeto. Pero por simplicidad, las hacemos dmg=2.
   let dmg, baseDmg;
-  if(NAME_5DMG.includes(t.name)) dmg = baseDmg = 5;
-  else if(NAME_3DMG.includes(t.name)) dmg = baseDmg = 3;
+  if(NAME_3DMG.includes(t.name)) dmg = baseDmg = 3;
   else if(NAME_2DMG.includes(t.name)) dmg = baseDmg = 2;
-  else if(NAME_2DMG_VARIANT.includes(t.name)) dmg = baseDmg = 2;
-  else dmg = baseDmg = 1; // Dron, Interceptador, Interceptador X, Meteoro, Nave Exploradora, Cazarrecompensa, Bombardero (dmg=1)
+  else if(t.name==='Bombardero Ligero') dmg = baseDmg = (t.value===2?2:1); // heurística: si valor inicial es 2, dmg=2
+  else dmg = baseDmg = 1; // Dron, Interceptador, Interceptador X, Meteoro, Nave Exploradora, Cazarrecompensa, Bombardero, Nebulosa
   const ignoresShield = t.name==='Saqueadores';
   // Cazarrecompensas: primero destruye el escudo, luego aplica dmg=1
   if(t.name==='Cazarrecompensas'){
     state.shield=0;
     log('Cazarrecompensas destruye todos los escudos.');
+  }
+  // Nebulosa: desactiva el escudo este turno (lo pone a 0) y quita 1 Salud al activarse
+  if(t.name==='Nebulosa'){
+    state.shield = 0;
+    log('Nebulosa: escudos desactivados, -1 Salud.');
   }
   // Aplicar daño: el escudo absorbe lo que pueda
   let abs = 0;
@@ -941,11 +1001,6 @@ function applyDamage(t){
     // Meteoro: al ser destruido, -5 extra
     t.extraApplied = true;
   }
-  // Vientos Solares: se descarta tras activarse
-  if(t.name==='Vientos Solares'){
-    state.external = state.external.filter(x=>x!==t);
-    log('Vientos Solares se descarta tras activarse.');
-  }
 }
 function resolveInternal(t){
   log(t.name+' se activa: '+t.effect);
@@ -955,6 +1010,15 @@ function resolveInternal(t){
   if(['Invasores','Revolución Robótica','Pandemia'].includes(t.name)){
     const av = state.dice.find(d=>d.loc==='available'||d.loc==='used');
     if(av) av.loc='infirmary';
+  }
+  // Vientos Solares (interna): -5 al casco, luego descartar
+  if(t.name==='Vientos Solares'){
+    let abs = 0;
+    if(state.shield>0){ abs = Math.min(state.shield, 5); state.shield -= abs; }
+    state.hull -= (5 - abs);
+    log('Vientos Solares: escudo absorbe -'+abs+', casco -'+(5-abs)+'.');
+    state.internal = state.internal.filter(x=>x!==t);
+    log('Vientos Solares se descarta tras activarse.');
   }
   if(t.name==='Distraído'){
     // Devuelve este dado (el que está en la misión de Distraído) y descarta la carta
@@ -1136,7 +1200,23 @@ function render(){
   function threatCardHtml(t, cls){
     // Cada badge es una columna con número grande + etiqueta pequeña debajo
     // Mostrar el valor de activación (puede ser un número o un array)
-    const actDisplay = (Array.isArray(t.activation) ? t.activation.join(',') : t.activation);
+    const actArr = Array.isArray(t.activation) ? t.activation : [t.activation];
+    // 1 activación → badge compacto normal
+    // 2+ activaciones → grid (clase .wide) para que cada número tenga su recuadrito
+    // 0 activaciones:
+    //   - Mercenario / Nave Exploradora (externas) → "PASS" (pasiva/condicional)
+    //   - Internas (Fuego Amigo, etc.) → "AUTO" (activa al entrar)
+    const noAct = actArr.length===0 || (actArr.length===1 && (actArr[0]===null || actArr[0]===0));
+    const isWide = actArr.length >= 2 && !noAct;
+    const solo = actArr.length === 1;
+    let actDisplay;
+    if(noAct){
+      actDisplay = (cls==='external') ? 'PASS' : 'AUTO';
+    } else if(isWide){
+      actDisplay = actArr.map(n=>`<span>${n}</span>`).join('');
+    } else {
+      actDisplay = actArr.join(',');
+    }
     let badges;
     if(cls==='external'){
       badges = `
@@ -1145,21 +1225,23 @@ function render(){
           <div class="num-badge-lbl">DAÑO</div>
         </div>
         <div class="num-badge-col">
-          <div class="num-badge act">${actDisplay}</div>
+          <div class="num-badge act${isWide?' wide':''}${solo?' solo':''}${noAct?' auto':''}">${actDisplay}</div>
           <div class="num-badge-lbl">DADO</div>
         </div>`;
     } else {
       badges = `
         <div class="num-badge-col">
-          <div class="num-badge act">${actDisplay||'-'}</div>
+          <div class="num-badge act${isWide?' wide':''}${solo?' solo':''}${noAct?' auto':''}">${actDisplay||'-'}</div>
           <div class="num-badge-lbl">DADO</div>
         </div>`;
     }
     let missionHtml='';
     if(t.missionType){
-      const canAssign = state.phase==='assign' && selDie && (t.missionType==='any' || selDie.face===t.missionType);
+      const accepts = Array.isArray(t.missionType) ? t.missionType : [t.missionType];
+      const canAssign = state.phase==='assign' && selDie && (accepts.includes('any') || accepts.includes(selDie.face));
+      const labels = accepts.map(x => MISSION_LABEL[x]||x).join(' o ');
       missionHtml = `<div class="mission-row${canAssign?' mission-can':''}" data-uid="${t.uid}" data-role="assign">
-        Misión: ${t.missionCount} × ${MISSION_LABEL[t.missionType]} — ${t.missionAssigned.length}/${t.missionCount}
+        Misión: ${t.missionCount} × ${labels} — ${t.missionAssigned.length}/${t.missionCount}
         ${t.missionAssigned.length>0?'<button class="mini-btn mission-withdraw" data-uid="'+t.uid+'" data-role="withdraw">Retirar</button>':''}
       </div>`;
     }
